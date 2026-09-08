@@ -1,0 +1,6 @@
+reason_code,reason_category,is_controllable
+Damaged in Transit,Logistics,true
+Overstock,Commercial,true
+Near Expiry,Inventory Management,true
+Product Recall,Quality/Regulatory,false
+Wrong Item Shipped,Logistics,true

@@ -1,0 +1,38 @@
+version: 2
+
+models:
+  - name: int_sales_gross_to_net
+    description: Order-line grain gross-to-net revenue waterfall (list -> discount -> rebate -> chargeback -> net).
+    columns:
+      - name: order_line_id
+        tests: [not_null, unique]
+      - name: net_revenue
+        tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: -100000
+                max_value: 10000000
+
+  - name: int_hcp_engagement_score
+    description: Rolling engagement score per HCP per visit event (visit frequency + sample volume + recency).
+    columns:
+      - name: visit_id
+        tests: [not_null, unique]
+      - name: engagement_score
+        tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 0
+                max_value: 100
+
+  - name: int_batch_expiry_flags
+    description: One row per batch/lot with expiry metadata and near-expiry/expired flags.
+    columns:
+      - name: batch_id
+        tests: [not_null, unique]
+
+  - name: int_inventory_days_on_hand
+    description: Daily warehouse/product/batch on-hand snapshot enriched with trailing consumption rate and computed days-on-hand.
+    columns:
+      - name: snapshot_date
+        tests: [not_null]

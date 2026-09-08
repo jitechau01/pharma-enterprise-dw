@@ -1,0 +1,91 @@
+# Local Airflow dev environment (LocalExecutor -- no Celery/Redis needed at
+# this scale). Brings up the same DAGs that deploy to MWAA, against a local
+# Postgres metadata DB. Snowflake/AWS connections still point at real
+# services (there's no local Snowflake) -- set them in .env, copied from
+# .env.example, before `docker compose up`.
+#
+# Usage:
+#   cp .env.example .env   # fill in SNOWFLAKE_* and AWS_* values
+#   docker compose up airflow-init
+#   docker compose up
+#   open http://localhost:8080  (user: airflow / pass: airflow)
+
+x-airflow-common: &airflow-common
+  build: .
+  environment: &airflow-common-env
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+    AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+    AIRFLOW__API__AUTH_BACKENDS: "airflow.api.auth.backend.basic_auth"
+    AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL: "30"
+
+    # --- pharma_dw DAG configuration (Airflow Variables, injected as env
+    #     vars using AIRFLOW_VAR_<NAME> -- no need to click through the UI) ---
+    AIRFLOW_VAR_PHARMA_DW_ENV: "dev"
+    AIRFLOW_VAR_PHARMA_DW_RAW_BUCKET: "${PHARMA_DW_RAW_BUCKET:-dev-pharma-raw-landing}"
+    AIRFLOW_VAR_PHARMA_DW_SNOWFLAKE_CONN_ID: "snowflake_default"
+    AIRFLOW_VAR_PHARMA_DW_DBT_PROJECT_DIR: "/opt/airflow/dbt/pharma_dw"
+    AIRFLOW_VAR_PHARMA_DW_DBT_TARGET: "dev"
+    AIRFLOW_VAR_PHARMA_DW_AT_RISK_INVENTORY_THRESHOLD: "25"
+    PHARMA_DW_DAG_FAILURE_SNS_TOPIC_ARN: "${PHARMA_DW_DAG_FAILURE_SNS_TOPIC_ARN:-}"
+
+    # --- connections (URI form; see .env.example) ---
+    AIRFLOW_CONN_SNOWFLAKE_DEFAULT: "${AIRFLOW_CONN_SNOWFLAKE_DEFAULT:-}"
+    AIRFLOW_CONN_AWS_DEFAULT: "${AIRFLOW_CONN_AWS_DEFAULT:-}"
+  volumes:
+    - ./dags:/opt/airflow/dags
+    - ./plugins:/opt/airflow/plugins
+    - ./include:/opt/airflow/include
+    - ./logs:/opt/airflow/logs
+    - ../dbt/pharma_dw:/opt/airflow/dbt/pharma_dw
+    - ../snowflake_setup:/opt/airflow/snowflake_setup
+  depends_on:
+    postgres:
+      condition: service_healthy
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - postgres-db-volume:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 5s
+      retries: 5
+    restart: always
+
+  airflow-init:
+    <<: *airflow-common
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        airflow db migrate
+        airflow users create \
+          --username airflow --password airflow \
+          --firstname Data --lastname Platform \
+          --role Admin --email admin@example.com
+
+  airflow-webserver:
+    <<: *airflow-common
+    command: webserver
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    restart: always
+
+  airflow-scheduler:
+    <<: *airflow-common
+    command: scheduler
+    restart: always
+
+volumes:
+  postgres-db-volume:

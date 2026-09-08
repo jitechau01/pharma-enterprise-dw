@@ -1,0 +1,26 @@
+# Copy to terraform.tfvars and fill in. Never commit terraform.tfvars.
+
+environment = "dev"
+aws_region  = "us-east-1"
+azs         = ["us-east-1a", "us-east-1b"]
+
+github_org  = "your-github-org"
+github_repo = "pharma-enterprise-dw"
+
+mwaa_alert_email = "data-platform-alerts@yourcompany.com"
+
+# Snowflake usernames (must already exist in Snowflake) to attach to each
+# functional role. The dbt/CI service account goes in transformer_users.
+snowflake_loader_users      = ["SVC_PHARMA_INGEST"]
+snowflake_transformer_users = ["SVC_PHARMA_DBT"]
+snowflake_analyst_users     = ["SVC_PHARMA_BI"]
+
+# Leave blank on first `terraform apply`. See README step 3 / docs/runbook.md.
+snowflake_storage_integration_iam_user_arn = ""
+snowflake_storage_integration_external_id  = ""
+
+# --- Snowflake provider auth (set as env vars instead of here) ----------
+# export SNOWFLAKE_ACCOUNT="your_account_locator"
+# export SNOWFLAKE_USER="TF_DEPLOY_USER"
+# export SNOWFLAKE_PRIVATE_KEY_PATH="~/.ssh/snowflake_tf_deploy_key.p8"
+# export SNOWFLAKE_ROLE="SYSADMIN"

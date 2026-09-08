@@ -1,0 +1,20 @@
+version: 2
+
+seeds:
+  - name: seed_territory
+    description: Static territory -> region reference. Sales territories are business-defined, not sourced from MDM.
+    columns:
+      - name: territory_id
+        tests: [not_null, unique]
+
+  - name: seed_therapeutic_category_group
+    description: Business grouping of MDM therapeutic categories into commercial reporting groups.
+    columns:
+      - name: therapeutic_category
+        tests: [not_null, unique]
+
+  - name: seed_return_reason_lookup
+    description: Classifies ERP return reason codes into controllable/non-controllable categories for returns analysis.
+    columns:
+      - name: reason_code
+        tests: [not_null, unique]

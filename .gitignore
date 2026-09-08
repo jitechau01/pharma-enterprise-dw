@@ -1,0 +1,45 @@
+# Secrets / local config
+.env
+*.tfvars
+!*.tfvars.example
+profiles.yml
+*.p8
+*.pem
+
+# Synthetic data output (regenerate via `make generate-data`)
+raw/
+
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraform.lock.hcl
+
+# dbt
+dbt/pharma_dw/target/
+dbt/pharma_dw/dbt_packages/
+dbt/pharma_dw/logs/
+dbt/pharma_dw/package-lock.yml
+
+# Airflow local
+airflow/logs/
+airflow/airflow.db
+airflow/.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/

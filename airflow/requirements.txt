@@ -1,0 +1,15 @@
+# MWAA installs these on top of the Airflow core + providers baked into the
+# chosen airflow_version (2.9.2, per terraform/modules/mwaa). Pin against
+# MWAA's published constraints file for that version in real usage:
+#   https://raw.githubusercontent.com/aws/aws-mwaa-local-runner/v2.9.2/requirements/constraints-3.11.txt
+#
+# apache-airflow itself is deliberately NOT listed here -- MWAA (and the
+# local docker-compose image, see Dockerfile) already provide it; pinning it
+# again in requirements.txt is the #1 cause of MWAA environment creation
+# failures.
+
+apache-airflow-providers-amazon==8.25.0
+apache-airflow-providers-snowflake==5.5.1
+dbt-core==1.8.8
+dbt-snowflake==1.8.4
+boto3>=1.34

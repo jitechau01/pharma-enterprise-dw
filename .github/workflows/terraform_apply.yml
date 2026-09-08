@@ -1,0 +1,52 @@
+name: Terraform Apply
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "terraform/**"
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    strategy:
+      max-parallel: 1     # dev -> staging -> prod, never concurrent
+      matrix:
+        environment: [dev, staging, prod]
+    # GitHub Environments gate this: configure required reviewers on the
+    # "staging" and "prod" environments in repo settings so `terraform
+    # apply` against those pauses for manual approval; "dev" can be
+    # left ungated for fast iteration.
+    environment: ${{ matrix.environment }}
+    defaults:
+      run:
+        working-directory: terraform/environments/${{ matrix.environment }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.0"
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_GITHUB_ACTIONS_ROLE_ARN }}
+          aws-region: us-east-1
+
+      - name: terraform init
+        run: terraform init
+
+      - name: terraform apply
+        env:
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_TF_DEPLOY_USER }}
+          SNOWFLAKE_PRIVATE_KEY: ${{ secrets.SNOWFLAKE_TF_DEPLOY_PRIVATE_KEY }}
+          SNOWFLAKE_ROLE: SYSADMIN
+          TF_VAR_github_org: ${{ github.repository_owner }}
+          TF_VAR_snowflake_storage_integration_iam_user_arn: ${{ secrets.SNOWFLAKE_STORAGE_INTEGRATION_IAM_USER_ARN }}
+          TF_VAR_snowflake_storage_integration_external_id: ${{ secrets.SNOWFLAKE_STORAGE_INTEGRATION_EXTERNAL_ID }}
+        run: terraform apply -auto-approve -input=false

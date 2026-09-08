@@ -1,0 +1,109 @@
+version: 2
+
+models:
+  - name: fact_sales_orders
+    description: >
+      Grain: one row per order line. Gross-to-net revenue waterfall,
+      as-of-dated to the SCD2 product version active on order_date.
+    tests:
+      - no_expired_batch_shipped
+    columns:
+      - name: order_line_id
+        tests: [not_null, unique]
+      - name: product_key
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_product')
+                field: product_key
+      - name: distributor_key
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_distributor')
+                field: distributor_key
+      - name: warehouse_key
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_warehouse')
+                field: warehouse_key
+      - name: net_revenue
+        tests:
+          - dbt_expectations.expect_column_values_to_not_be_null
+
+  - name: fact_hcp_visits
+    description: >
+      Grain: one row per rep<->HCP visit event, with SCD2 as-of dimension
+      keys and the trailing-window engagement score.
+    columns:
+      - name: visit_id
+        tests: [not_null, unique]
+      - name: hcp_key
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_hcp')
+                field: hcp_key
+      - name: rep_key
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_sales_rep')
+                field: rep_key
+      - name: engagement_score
+        tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 0
+                max_value: 100
+
+  - name: fact_inventory_snapshot
+    description: >
+      Grain: one row per warehouse/product/batch/day, with days-on-hand and
+      expiry-risk flags.
+    columns:
+      - name: product_key
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_product')
+                field: product_key
+      - name: warehouse_key
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_warehouse')
+                field: warehouse_key
+      - name: qty_on_hand
+        tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 0
+
+  - name: fact_returns
+    description: "Grain: one row per return line, classified by controllable/non-controllable reason."
+    columns:
+      - name: return_id
+        tests: [not_null, unique]
+      - name: product_key
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_product')
+                field: product_key
+      - name: distributor_key
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_distributor')
+                field: distributor_key

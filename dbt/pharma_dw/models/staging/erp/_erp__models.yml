@@ -1,0 +1,57 @@
+version: 2
+
+models:
+  - name: stg_erp__distributor
+    description: Current-state distributor/customer master (deduped to latest load per distributor_id -- SCD1 source).
+    columns:
+      - name: distributor_id
+        tests: [not_null, unique]
+
+  - name: stg_erp__warehouse
+    description: Current-state warehouse/DC master (deduped to latest load per warehouse_id -- SCD1 source).
+    columns:
+      - name: warehouse_id
+        tests: [not_null, unique]
+
+  - name: stg_erp__sales_order
+    description: One row per order line (append-only).
+    columns:
+      - name: order_line_id
+        tests: [not_null, unique]
+      - name: quantity
+        tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 1
+      - name: discount_pct
+        tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 0
+                max_value: 1
+      - name: rebate_pct
+        tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 0
+                max_value: 1
+
+  - name: stg_erp__return
+    description: One row per return line (append-only).
+    columns:
+      - name: return_id
+        tests: [not_null, unique]
+      - name: reason_code
+        tests:
+          - accepted_values:
+              arguments:
+                values: ["Damaged in Transit", "Overstock", "Near Expiry", "Product Recall", "Wrong Item Shipped"]
+
+  - name: stg_erp__inventory_snapshot
+    description: One row per warehouse/product/batch/day on-hand quantity.
+    columns:
+      - name: qty_on_hand
+        tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 0

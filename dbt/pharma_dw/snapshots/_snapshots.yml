@@ -1,0 +1,26 @@
+version: 2
+
+snapshots:
+  - name: snap_mdm_product
+    description: >
+      SCD2 history of MDM product master, keyed on product_id, using dbt's
+      timestamp strategy against source_updated_at. dbt_valid_from /
+      dbt_valid_to define each version's active window; dim_product reads
+      this directly.
+    columns:
+      - name: product_id
+        tests: [not_null]
+      - name: dbt_valid_from
+        tests: [not_null]
+
+  - name: snap_mdm_hcp
+    description: SCD2 history of MDM HCP master, keyed on hcp_id.
+    columns:
+      - name: hcp_id
+        tests: [not_null]
+
+  - name: snap_mdm_sales_rep
+    description: SCD2 history of MDM sales rep master, keyed on rep_id.
+    columns:
+      - name: rep_id
+        tests: [not_null]

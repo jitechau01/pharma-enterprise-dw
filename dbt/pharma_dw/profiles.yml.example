@@ -1,0 +1,42 @@
+# Copy to ~/.dbt/profiles.yml (or set DBT_PROFILES_DIR) and fill in.
+# Never commit a real profiles.yml -- credentials belong in env vars /
+# Secrets Manager (see airflow/dags for how MWAA injects these at runtime).
+
+pharma_dw:
+  target: dev
+  outputs:
+    dev:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
+      user: "{{ env_var('SNOWFLAKE_USER') }}"
+      authenticator: snowflake_jwt
+      private_key_path: "{{ env_var('SNOWFLAKE_PRIVATE_KEY_PATH') }}"
+      role: PHARMA_TRANSFORMER_DEV
+      database: PHARMA_DBT_DEV
+      warehouse: PHARMA_TRANSFORMING_WH_DEV
+      schema: staging   # overridden per-model by the custom schema macro
+      threads: 8
+
+    ci:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
+      user: "{{ env_var('SNOWFLAKE_CI_USER') }}"
+      authenticator: snowflake_jwt
+      private_key_path: "{{ env_var('SNOWFLAKE_CI_PRIVATE_KEY_PATH') }}"
+      role: PHARMA_TRANSFORMER_DEV
+      database: PHARMA_DBT_DEV
+      warehouse: PHARMA_TRANSFORMING_WH_DEV
+      schema: "ci_pr_{{ env_var('GITHUB_PR_NUMBER', 'local') }}"
+      threads: 8
+
+    prod:
+      type: snowflake
+      account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
+      user: "{{ env_var('SNOWFLAKE_PROD_USER') }}"
+      authenticator: snowflake_jwt
+      private_key_path: "{{ env_var('SNOWFLAKE_PROD_PRIVATE_KEY_PATH') }}"
+      role: PHARMA_TRANSFORMER_PROD
+      database: PHARMA_DBT_PROD
+      warehouse: PHARMA_TRANSFORMING_WH_PROD
+      schema: staging
+      threads: 16

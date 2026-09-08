@@ -1,0 +1,32 @@
+# Synthetic data generation config
+# Controls volume/shape of the simulated pharma commercial data set.
+
+simulation:
+  start_date: "2026-08-09"     # first simulated business day
+  num_days: 30                 # number of daily extract batches to generate
+  seed: 42                     # RNG seed for reproducibility
+
+volumes:
+  num_products: 40
+  num_hcps: 150
+  num_sales_reps: 25
+  num_distributors: 20
+  num_warehouses: 6
+  num_territories: 12
+  batches_per_product: 3       # initial manufactured lots per product
+
+daily_activity:
+  hcp_visits_per_day: [20, 60]        # [min, max] random range
+  order_lines_per_day: [30, 90]
+  returns_per_day: [0, 5]
+  replenishment_chance_per_product_day: 0.06   # chance a product gets a new batch that day
+
+master_data_change_rates:
+  product_change_chance_per_day: 0.03   # chance any single product mutates on a given day
+  hcp_change_chance_per_day: 0.02
+  rep_change_chance_per_day: 0.015
+  distributor_change_chance_per_day: 0.01
+  warehouse_change_chance_per_day: 0.005
+
+output:
+  raw_dir: "../raw"   # mirrors the S3 raw landing zone layout: <source>/<table>/dt=YYYY-MM-DD/

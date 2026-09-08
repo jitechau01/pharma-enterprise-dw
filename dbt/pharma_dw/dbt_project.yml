@@ -1,0 +1,59 @@
+name: 'pharma_dw'
+version: '1.0.0'
+config-version: 2
+
+profile: 'pharma_dw'
+
+model-paths: ["models"]
+seed-paths: ["seeds"]
+snapshot-paths: ["snapshots"]
+test-paths: ["tests"]
+macro-paths: ["macros"]
+analysis-paths: ["analyses"]
+clean-targets: ["target", "dbt_packages"]
+
+vars:
+  # Batches within this many days of expiry are flagged is_near_expiry in
+  # fact_inventory_snapshot / dim_product-adjacent logic.
+  near_expiry_threshold_days: 90
+  # Trailing window for HCP engagement scoring and inventory consumption rate.
+  engagement_lookback_days: 90
+  consumption_lookback_days: 30
+  # First day of the dbt_utils.date_spine used to build dim_date.
+  date_spine_start: "2025-01-01"
+  date_spine_end: "2027-12-31"
+
+seeds:
+  pharma_dw:
+    +schema: seeds
+    +quote_columns: false
+
+models:
+  pharma_dw:
+    +database: "{{ 'PHARMA_DBT_' ~ (target.name | upper) }}"
+    staging:
+      +materialized: view
+      +schema: staging
+    intermediate:
+      +materialized: view
+      +schema: intermediate
+    marts:
+      core:
+        +materialized: table
+        +schema: marts
+      commercial:
+        +materialized: table
+        +schema: marts
+
+snapshots:
+  pharma_dw:
+    +database: "{{ 'PHARMA_DBT_' ~ (target.name | upper) }}"
+    +schema: snapshots
+
+tests:
+  pharma_dw:
+    +store_failures: true
+    +schema: dbt_test_failures
+
+on-run-start:
+  - "{{ log('Running pharma_dw dbt project against target: ' ~ target.name, info=True) }}"

@@ -1,0 +1,13 @@
+territory_id,territory_name,region
+TERR-001,Boston Metro,Northeast
+TERR-002,New York Metro,Northeast
+TERR-003,Philadelphia,Northeast
+TERR-004,Atlanta,Southeast
+TERR-005,Miami-Dade,Southeast
+TERR-006,Charlotte,Southeast
+TERR-007,Chicago,Midwest
+TERR-008,Detroit,Midwest
+TERR-009,Dallas-Fort Worth,Southwest
+TERR-010,Phoenix,Southwest
+TERR-011,Los Angeles,West
+TERR-012,Seattle,West

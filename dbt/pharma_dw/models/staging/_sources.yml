@@ -1,0 +1,77 @@
+version: 2
+
+sources:
+  - name: mdm
+    database: "{{ 'PHARMA_RAW_' ~ (target.name | upper) }}"
+    schema: MDM
+    description: Master data management extracts (product, HCP, sales rep).
+    config:
+      loaded_at_field: _loaded_at
+      freshness:
+        warn_after: { count: 30, period: hour }
+        error_after: { count: 48, period: hour }
+    tables:
+      - name: product
+        identifier: PRODUCT
+        columns:
+          - name: product_id
+            tests: [not_null]
+      - name: hcp
+        identifier: HCP
+        columns:
+          - name: hcp_id
+            tests: [not_null]
+      - name: sales_rep
+        identifier: SALES_REP
+        columns:
+          - name: rep_id
+            tests: [not_null]
+
+  - name: crm
+    database: "{{ 'PHARMA_RAW_' ~ (target.name | upper) }}"
+    schema: CRM
+    description: CRM rep <-> HCP interaction and sample-drop extracts.
+    config:
+      loaded_at_field: _loaded_at
+      freshness:
+        warn_after: { count: 30, period: hour }
+        error_after: { count: 48, period: hour }
+    tables:
+      - name: hcp_visit
+        identifier: HCP_VISIT
+        columns:
+          - name: visit_id
+            tests: [not_null, unique]
+
+  - name: erp
+    database: "{{ 'PHARMA_RAW_' ~ (target.name | upper) }}"
+    schema: ERP
+    description: ERP order, shipment, inventory, and returns extracts.
+    config:
+      loaded_at_field: _loaded_at
+      freshness:
+        warn_after: { count: 30, period: hour }
+        error_after: { count: 48, period: hour }
+    tables:
+      - name: distributor
+        identifier: DISTRIBUTOR
+        columns:
+          - name: distributor_id
+            tests: [not_null]
+      - name: warehouse
+        identifier: WAREHOUSE
+        columns:
+          - name: warehouse_id
+            tests: [not_null]
+      - name: sales_order
+        identifier: SALES_ORDER
+        columns:
+          - name: order_line_id
+            tests: [not_null, unique]
+      - name: return
+        identifier: RETURN
+        columns:
+          - name: return_id
+            tests: [not_null, unique]
+      - name: inventory_snapshot
+        identifier: INVENTORY_SNAPSHOT

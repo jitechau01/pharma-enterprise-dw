@@ -1,0 +1,72 @@
+name: Python CI
+
+on:
+  pull_request:
+    paths:
+      - "data_generator/**"
+      - "scripts/**"
+      - "airflow/**"
+      - ".github/workflows/python_ci.yml"
+
+jobs:
+  lint_and_test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install lint/test tooling
+        run: pip install ruff pytest
+
+      - name: Ruff lint (data_generator, scripts)
+        run: ruff check data_generator scripts
+
+      - name: Smoke-test the synthetic data generator
+        working-directory: data_generator
+        run: |
+          pip install -r requirements.txt
+          python generate_synthetic_data.py --config config.yaml
+          test -d ../raw/mdm/product || (echo "generator produced no output" && exit 1)
+
+  airflow_dag_import_check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Airflow + providers (pinned to MWAA's airflow_version)
+        run: |
+          AIRFLOW_VERSION=2.9.2
+          PYTHON_VERSION=3.11
+          CONSTRAINT_URL="https://raw.githubusercontent.com/apache/airflow/constraints-${AIRFLOW_VERSION}/constraints-${PYTHON_VERSION}.txt"
+          pip install "apache-airflow==${AIRFLOW_VERSION}" \
+            apache-airflow-providers-amazon apache-airflow-providers-snowflake \
+            --constraint "${CONSTRAINT_URL}"
+
+      - name: Check for DAG import errors
+        env:
+          AIRFLOW_HOME: /tmp/airflow_home
+          AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+          AIRFLOW__CORE__DAGS_FOLDER: ${{ github.workspace }}/airflow/dags
+          AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: "sqlite:////tmp/airflow_home/airflow.db"
+          AIRFLOW_VAR_PHARMA_DW_ENV: dev
+          AIRFLOW_VAR_PHARMA_DW_RAW_BUCKET: dev-pharma-raw-landing-ci
+          AIRFLOW_VAR_PHARMA_DW_SNOWFLAKE_CONN_ID: snowflake_default
+          AIRFLOW_VAR_PHARMA_DW_DBT_PROJECT_DIR: /opt/airflow/dbt/pharma_dw
+          AIRFLOW_VAR_PHARMA_DW_DBT_TARGET: dev
+          AIRFLOW_VAR_PHARMA_DW_AT_RISK_INVENTORY_THRESHOLD: "25"
+          AIRFLOW_CONN_SNOWFLAKE_DEFAULT: "snowflake://user:pass@account/db/schema?warehouse=wh&role=role"
+          AIRFLOW_CONN_AWS_DEFAULT: "aws://key:secret@?region_name=us-east-1"
+          PYTHONPATH: ${{ github.workspace }}/airflow/dags
+        run: |
+          airflow db migrate
+          ERRORS=$(airflow dags list-import-errors)
+          echo "$ERRORS"
+          if echo "$ERRORS" | grep -q "Traceback"; then
+            echo "DAG import errors found"
+            exit 1
+          fi

@@ -1,0 +1,55 @@
+version: 2
+
+models:
+  - name: dim_product
+    description: SCD2 product dimension (one row per product version). Join fact tables on product_key for the version active as-of the event date.
+    columns:
+      - name: product_key
+        tests: [not_null, unique]
+      - name: product_id
+        tests: [not_null]
+      - name: price_tier
+        tests:
+          - accepted_values:
+              arguments:
+                values: ["Tier 1 - Specialty", "Tier 2 - Branded", "Tier 3 - Generic-Equivalent"]
+
+  - name: dim_hcp
+    description: SCD2 healthcare provider dimension (one row per HCP version).
+    columns:
+      - name: hcp_key
+        tests: [not_null, unique]
+      - name: hcp_id
+        tests: [not_null]
+
+  - name: dim_sales_rep
+    description: SCD2 sales rep dimension (one row per rep version), with current-manager name resolved.
+    columns:
+      - name: rep_key
+        tests: [not_null, unique]
+      - name: rep_id
+        tests: [not_null]
+
+  - name: dim_distributor
+    description: SCD1 distributor/customer dimension (current state only).
+    columns:
+      - name: distributor_key
+        tests: [not_null, unique]
+      - name: distributor_id
+        tests: [not_null, unique]
+
+  - name: dim_warehouse
+    description: SCD1 warehouse/distribution-center dimension (current state only).
+    columns:
+      - name: warehouse_key
+        tests: [not_null, unique]
+      - name: warehouse_id
+        tests: [not_null, unique]
+
+  - name: dim_date
+    description: Generated calendar dimension.
+    columns:
+      - name: date_day
+        tests: [not_null, unique]
+      - name: date_key
+        tests: [not_null, unique]

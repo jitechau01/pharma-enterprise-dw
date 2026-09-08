@@ -1,0 +1,33 @@
+version: 2
+
+models:
+  - name: stg_mdm__product
+    description: One row per product per distinct MDM revision (deduped, typed, trimmed). Feeds snap_mdm_product for SCD2 history.
+    columns:
+      - name: product_id
+        tests: [not_null]
+      - name: list_price
+        tests:
+          - dbt_expectations.expect_column_values_to_be_between:
+              arguments:
+                min_value: 0
+                strictly: true
+      - name: price_tier
+        tests:
+          - accepted_values:
+              arguments:
+                values: ["Tier 1 - Specialty", "Tier 2 - Branded", "Tier 3 - Generic-Equivalent"]
+
+  - name: stg_mdm__hcp
+    description: One row per HCP per distinct MDM revision (deduped, typed, trimmed). Feeds snap_mdm_hcp for SCD2 history.
+    columns:
+      - name: hcp_id
+        tests: [not_null]
+      - name: npi_number
+        tests: [not_null]
+
+  - name: stg_mdm__sales_rep
+    description: One row per rep per distinct MDM revision (deduped, typed, trimmed). Feeds snap_mdm_sales_rep for SCD2 history.
+    columns:
+      - name: rep_id
+        tests: [not_null]
